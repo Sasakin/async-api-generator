@@ -1,0 +1,134 @@
+asyncapi: 3.0.0
+defaultContentType: application/json
+info:
+  title: Resource Management API
+  version: 0.1.0
+  description: Asynchronous resource management API
+
+servers:
+  dev:
+    host: local:31441
+    protocol: kafka-secure
+    protocolVersion: '3.1'
+    description: DEV broker secured with scramSha256
+    tags:
+      - name: env:test-scram
+        description: >-
+          This environment is meant for running internal tests
+      - name: kind:remote
+        description: This server is a remote server. Not exposed by the application
+      - name: visibility:private
+        description: This resource is private and only available to certain users
+
+channels:
+  resource-request:
+    address: resource.request
+    title: Resource request topic
+    summary: Contains resource management requests
+    description: (ToDo Description Channel (topic))
+    servers:
+      - $ref: '#/servers/dev'
+    messages:
+      createResource:
+        $ref: "#/components/messages/createResource"
+
+operations:
+  Receive:
+    action: receive
+    channel:
+      $ref: "#/channels/resource-request"
+    title: Resource request received
+    summary: A brief summary of the operation
+    description: A longer description of the operation. CommonMark is allowed.
+
+components:
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        required:
+          - id
+          - source
+        properties:
+          id:
+            type: string
+            description: Unique message identifier
+            format: uuid
+          source:
+            type: string
+            description: Service that sent the request
+          correlationid:
+            type: string
+            description: Request correlation identifier
+            format: uuid
+          timestamp:
+            type: string
+            description: Message creation timestamp
+            format: date-time
+          contenttype:
+            type: string
+            description: Content type of the message payload
+          replyto:
+            type: string
+            description: Topic to send response to
+        additionalProperties: false
+
+  messages:
+    createResource:
+      title: createResource
+      summary: Message with task for creating resource
+      description: Message description
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+      payload:
+        $ref: "#/components/schemas/ResourceCreate"
+
+  schemas:
+    ResourceCreate:
+      type: object
+      properties:
+        specification:
+          $ref: '#/components/schemas/ResourceSpecification'
+      required:
+        - specification
+    ResourceSpecification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Resource identifier
+        name:
+          type: string
+          description: Resource name
+      required:
+        - id
+        - name
+    ErrorMessage:
+      title: errorMessage
+      description: Error message
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          description: Operation status
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - COMPLETED
+            - FAILED
+        error:
+          type: object
+          description: Resource DTO
+          additionalProperties: false
+          properties:
+            code:
+              type: integer
+              description: Error code
+            message:
+              type: string
+              description: Error message
+            details:
+              type: object
+              description: Error details. Keys represent the hierarchical address of the JSON key. The value contains the description in the context of this field.

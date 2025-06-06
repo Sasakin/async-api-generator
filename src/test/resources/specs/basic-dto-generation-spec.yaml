@@ -1,0 +1,99 @@
+asyncapi: '3.0.0'
+info:
+  title: Resource Management API
+  version: '1.0.0'
+channels:
+  resource-request:
+    address: resource.request
+    title: Topic for resource requests from other services
+    summary: Contains requests from other services
+    description: (ToDo Description Channel (topic))
+    servers:
+      - $ref: "#/servers/dev"
+    messages:
+      create:
+        $ref: "#/components/messages/create-ext"
+      delete:
+        $ref: "#/components/messages/delete-ext"
+components:
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        required:
+          - id
+          - source
+        properties:
+          id:
+            type: string
+            description: Unique message identifier
+            format: uuid
+          source:
+            type: string
+            description: Service that sent the request
+          correlationid:
+            type: string
+            description: Request correlation identifier
+            format: uuid
+          timestamp:
+            type: string
+            description: Message creation timestamp
+            format: date-time
+          contenttype:
+            type: string
+            description: Content type of the message payload
+          replyto:
+            type: string
+            description: Topic to send response to
+        additionalProperties: false
+  schemas:
+    ReferenceDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - USER
+            - SYSTEM
+        name:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+          properties:
+            region:
+              type: string
+            zone:
+              type: string
+        tags:
+          type: array
+          items:
+            type: string
+    StatusDTO:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - PENDING
+        lastUpdate:
+          type: string
+          format: date-time
+        health:
+          type: integer
+
+  messages:
+    create-ext:
+      title: Create Request from external service
+      summary: Message with create task request
+      description: Message description
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+      payload:
+        $ref: "#/components/schemas/ReferenceDTO"

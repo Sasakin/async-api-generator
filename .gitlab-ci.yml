@@ -1,0 +1,81 @@
+---
+workflow:
+  rules:
+    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
+      when: never
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == "false"
+      when: never
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+      when: always
+    - when: always
+".test-policy":
+  rules:
+    - if: "$CI_COMMIT_TAG"
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: "$CI_MERGE_REQUEST_ID == null && $CI_OPEN_MERGE_REQUESTS == null"
+      when: manual
+      allow_failure: true
+    - if: "$CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/"
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - when: on_success
+default:
+  tags:
+    - shell
+variables:
+  LOG_LEVEL: INFO
+  GRADLE_OPTS: "-Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.daemon=true"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+stages:
+  - ".pre"
+  - test
+  - build
+  - publish
+  - ".post"
+
+publish lib:
+  stage: publish
+  script:
+    - gradle publish
+  rules:
+    - if: "$CI_COMMIT_TAG =~ /^v.*/"
+      when: always
+
+cache:
+  key: "${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .gradle/wrapper/
+    - .gradle/caches/
+
+before_script:
+  - chmod +x ./gradlew  # Убедиться, что gradlew имеет права на выполнение
+  - export GRADLE_USER_HOME=$(pwd)/.gradle
+
+test:
+  stage: test
+  image: openjdk:17-jdk-slim
+  script:
+    - ./gradlew test --info --console=plain
+  artifacts:
+    reports:
+      junit:
+        - build/test-results/test/TEST-*.xml
+    paths:
+      - build/reports/tests/
+    expire_in: 1 week
+  only:
+    - merge_requests
+
+build:
+  stage: build
+  image: openjdk:17-jdk-slim
+  script:
+    - ./gradlew build --console=plain
+  artifacts:
+    paths:
+      - build/libs/
+      - build/reports/
+    expire_in: 1 week
+  only:
+    - main
+    - merge_requests
