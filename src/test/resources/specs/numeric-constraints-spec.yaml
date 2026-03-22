@@ -1,0 +1,101 @@
+asyncapi: 3.0.0
+defaultContentType: application/json
+info:
+  title: Numeric Constraints API
+  version: 0.1.0
+  description: API with numeric field constraints
+
+channels:
+  numeric-request:
+    address: numeric.request
+    title: Numeric request topic
+    summary: Contains requests with numeric constraints
+    description: Topic for requests with numeric value constraints
+    servers:
+      - $ref: '#/servers/dev'
+    messages:
+      calculate:
+        $ref: "#/components/messages/calculate"
+
+components:
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        required:
+          - id
+          - source
+        properties:
+          id:
+            type: string
+            description: Unique message identifier
+            format: uuid
+          source:
+            type: string
+            description: Service that sent the request
+          timestamp:
+            type: string
+            description: Message creation timestamp
+            format: date-time
+        additionalProperties: false
+
+  schemas:
+    NumericTestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID identifier
+        count:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Count value with min/max constraints
+        rating:
+          type: number
+          minimum: 1.0
+          maximum: 5.0
+          multipleOf: 0.5
+          description: Rating with decimal constraints
+        price:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Price with exclusive minimum
+        percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Percentage value
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Priority level
+        temperature:
+          type: number
+          minimum: -273.15
+          description: Temperature in Celsius
+        arrayWithConstraints:
+          type: array
+          items:
+            type: number
+            minimum: 0
+            maximum: 100
+          minItems: 1
+          maxItems: 5
+          description: Array with numeric items constraints
+      required:
+        - id
+        - count
+
+  messages:
+    calculate:
+      title: Calculate Request
+      summary: Message with calculation parameters
+      description: Message with numeric constraints
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+      payload:
+        $ref: "#/components/schemas/NumericTestDTO"

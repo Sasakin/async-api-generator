@@ -1,0 +1,88 @@
+asyncapi: 3.0.0
+defaultContentType: application/json
+info:
+  title: Nullable Fields API
+  version: 0.1.0
+  description: API with nullable fields
+
+channels:
+  user-request:
+    address: user.request
+    title: User request topic
+    summary: Contains user requests
+    description: Topic for user requests with potentially null values
+    servers:
+      - $ref: '#/servers/dev'
+    messages:
+      create:
+        $ref: "#/components/messages/create"
+
+components:
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        required:
+          - id
+          - source
+        properties:
+          id:
+            type: string
+            description: Unique message identifier
+            format: uuid
+          source:
+            type: string
+            description: Service that sent the request
+          timestamp:
+            type: string
+            description: Message creation timestamp
+            format: date-time
+        additionalProperties: false
+
+  schemas:
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User identifier
+        name:
+          type: string
+          description: User name (required)
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: User email (can be null)
+        age:
+          type: integer
+          nullable: true
+          description: User age (can be null)
+        profilePicture:
+          type: string
+          format: uri
+          nullable: true
+          description: Profile picture URL (can be null)
+        preferences:
+          type: object
+          nullable: true
+          properties:
+            theme:
+              type: string
+              nullable: true
+              description: UI theme preference
+          description: User preferences (can be null)
+      required:
+        - id
+        - name
+
+  messages:
+    create:
+      title: Create User Request
+      summary: Message with create user task request
+      description: Message to create a user with nullable fields
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+      payload:
+        $ref: "#/components/schemas/UserDTO"

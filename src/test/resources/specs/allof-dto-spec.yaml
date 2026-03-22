@@ -1,0 +1,164 @@
+asyncapi: '3.0.0'
+info:
+  title: AllOf Test API
+  version: '1.0.0'
+
+channels:
+  resource-event:
+    address: resource.event
+    messages:
+      resource-created:
+        $ref: "#/components/messages/ResourceCreated"
+
+components:
+  schemas:
+    # Базовый класс с общими свойствами
+    BaseResource:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+
+    # Дополнительные свойства для AWS
+    AwsProperties:
+      type: object
+      required:
+        - region
+        - instanceType
+      properties:
+        region:
+          type: string
+          enum:
+            - us-east-1
+            - us-west-2
+            - eu-west-1
+        instanceType:
+          type: string
+          pattern: '^[a-z0-9]+\.[a-z0-9]+$'
+        vpcId:
+          type: string
+          pattern: '^vpc-[a-z0-9]+$'
+          nullable: true
+        subnetIds:
+          type: array
+          items:
+            type: string
+            pattern: '^subnet-[a-z0-9]+$'
+
+    # Дополнительные свойства для Azure
+    AzureProperties:
+      type: object
+      required:
+        - location
+        - resourceGroup
+      properties:
+        location:
+          type: string
+          enum:
+            - eastus
+            - westeurope
+            - southeastasia
+        resourceGroup:
+          type: string
+          pattern: '^[a-zA-Z0-9-_]+$'
+        subscriptionId:
+          type: string
+          format: uuid
+
+    # Комбинированная схема через allOf (наследование)
+    AwsResource:
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - $ref: "#/components/schemas/AwsProperties"
+      type: object
+      required:
+        - tags
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+
+    # Еще один пример с inline allOf
+    HybridResource:
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+        - type: object
+          required:
+            - cloudProvider
+          properties:
+            cloudProvider:
+              type: string
+              enum:
+                - AWS
+                - AZURE
+                - GCP
+            hybridConfig:
+              type: object
+              properties:
+                onPremiseHost:
+                  type: string
+                cloudConnection:
+                  type: string
+
+    # Схема с многоуровневым allOf
+    ExtendedAwsResource:
+      allOf:
+        - $ref: "#/components/schemas/AwsResource"
+        - type: object
+          properties:
+            monitoring:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                metrics:
+                  type: array
+                  items:
+                    type: string
+            costCenter:
+              type: string
+              pattern: '^CC-[0-9]{4}$'
+
+    # Схема с allOf и дополнительными свойствами на том же уровне
+    CompleteResource:
+      allOf:
+        - $ref: "#/components/schemas/BaseResource"
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - CREATING
+            - ACTIVE
+            - DELETING
+            - ERROR
+        metadata:
+          type: object
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+  messages:
+    ResourceCreated:
+      title: Resource Created Event
+      payload:
+        $ref: "#/components/schemas/ExtendedAwsResource"

@@ -1,0 +1,90 @@
+asyncapi: 3.0.0
+defaultContentType: application/json
+info:
+  title: Constraints API
+  version: 0.1.0
+  description: API with field constraints
+
+channels:
+  constraint-request:
+    address: constraint.request
+    title: Constraint request topic
+    summary: Contains requests with field constraints
+    description: Topic for requests with pattern and length constraints
+    servers:
+      - $ref: '#/servers/dev'
+    messages:
+      validate:
+        $ref: "#/components/messages/validate"
+
+components:
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        required:
+          - id
+          - source
+        properties:
+          id:
+            type: string
+            description: Unique message identifier
+            format: uuid
+          source:
+            type: string
+            description: Service that sent the request
+          timestamp:
+            type: string
+            description: Message creation timestamp
+            format: date-time
+        additionalProperties: false
+
+  schemas:
+    ConstraintTestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID identifier
+        username:
+          type: string
+          pattern: "^[a-zA-Z][a-zA-Z0-9_]{2,19}$"
+          minLength: 3
+          maxLength: 20
+          description: Username with pattern and length constraints
+        code:
+          type: string
+          pattern: "^[A-Z]{2,10}$"
+          description: Code with uppercase letters and length constraints
+        phone:
+          type: string
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          description: Phone number with pattern constraint
+        description:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Description with length constraints
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          minItems: 1
+          maxItems: 10
+          description: Tags with item count and length constraints
+      required:
+        - id
+        - username
+
+  messages:
+    validate:
+      title: Validate with Constraints
+      summary: Message with constraint validation request
+      description: Message with various field constraints
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+      payload:
+        $ref: "#/components/schemas/ConstraintTestDTO"
